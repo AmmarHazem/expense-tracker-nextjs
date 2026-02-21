@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { DesignThemeProvider } from "@/components/providers/DesignThemeProvider";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 
 const geistSans = Geist({
@@ -19,6 +20,9 @@ export const metadata: Metadata = {
   description: "Track your expenses with style",
 };
 
+// Inline script run before React hydration to prevent flash of wrong design theme
+const designThemeScript = `(function(){try{var t=localStorage.getItem('design-theme');document.documentElement.setAttribute('data-design-theme',t==='ios'||t==='brutalist'?t:'brutalist');}catch(e){}})();`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -26,9 +30,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: designThemeScript }} />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ThemeProvider>
-          <SessionProvider>{children}</SessionProvider>
+          <DesignThemeProvider>
+            <SessionProvider>{children}</SessionProvider>
+          </DesignThemeProvider>
         </ThemeProvider>
       </body>
     </html>
