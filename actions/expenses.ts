@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { expenseSchema } from "@/schemas/expense.schema";
+import { Decimal } from "@prisma/client/runtime/client";
 
 function requireAuth() {
   return auth().then((session) => {
@@ -150,7 +151,7 @@ export async function getExpenses({
   ]);
 
   return {
-    expenses: expenses.map((e) => ({
+    expenses: expenses.map((e: { amount: Decimal }) => ({
       ...e,
       amount: parseFloat(e.amount.toString()),
     })),
