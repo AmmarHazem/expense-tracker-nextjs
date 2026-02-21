@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { format, eachDayOfInterval } from "date-fns";
 import type { AnalyticsData } from "@/types";
+import { Decimal } from "@prisma/client/runtime/client";
 
 async function requireAuth() {
   const session = await auth();
@@ -13,7 +14,7 @@ async function requireAuth() {
 
 export async function getAnalyticsData(
   startDate: Date,
-  endDate: Date
+  endDate: Date,
 ): Promise<AnalyticsData> {
   const userId = await requireAuth();
 
@@ -34,8 +35,9 @@ export async function getAnalyticsData(
   ]);
 
   const totalSpent = expenses.reduce(
-    (sum, e) => sum + parseFloat(e.amount.toString()),
-    0
+    (sum: number, e: { amount: Decimal }) =>
+      sum + parseFloat(e.amount.toString()),
+    0,
   );
 
   // Daily spending with cumulative
@@ -44,7 +46,10 @@ export async function getAnalyticsData(
   const dailyMap = new Map<string, number>();
   for (const e of expenses) {
     const key = format(e.date, "yyyy-MM-dd");
-    dailyMap.set(key, (dailyMap.get(key) || 0) + parseFloat(e.amount.toString()));
+    dailyMap.set(
+      key,
+      (dailyMap.get(key) || 0) + parseFloat(e.amount.toString()),
+    );
   }
 
   const daily = days.map((d) => {
@@ -57,7 +62,13 @@ export async function getAnalyticsData(
   // By category
   const catMap = new Map<
     string,
-    { name: string; emoji: string; color: string; amount: number; count: number }
+    {
+      name: string;
+      emoji: string;
+      color: string;
+      amount: number;
+      count: number;
+    }
   >();
   for (const e of expenses) {
     const key = e.categoryId;
@@ -89,7 +100,7 @@ export async function getAnalyticsData(
   const avgDaily = totalSpent / daysCount;
   const topCategory = byCategory[0] ?? null;
   const previousPeriodTotal = parseFloat(
-    (prevExpenses._sum.amount ?? 0).toString()
+    (prevExpenses._sum.amount ?? 0).toString(),
   );
 
   return {
