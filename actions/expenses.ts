@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { expenseSchema } from "@/schemas/expense.schema";
-import type { Prisma } from "@prisma/client";
+type ExpenseWithCategory = Awaited<
+  ReturnType<typeof prisma.expense.findMany<{ include: { category: true } }>>
+>[number];
 
 function requireAuth() {
   return auth().then((session) => {
@@ -150,7 +152,6 @@ export async function getExpenses({
     prisma.expense.count({ where }),
   ]);
 
-  type ExpenseWithCategory = Prisma.ExpenseGetPayload<{ include: { category: true } }>;
   return {
     expenses: expenses.map((e: ExpenseWithCategory) => ({
       ...e,
@@ -171,7 +172,6 @@ export async function getRecentExpenses(limit = 5) {
     take: limit,
   });
 
-  type ExpenseWithCategory = Prisma.ExpenseGetPayload<{ include: { category: true } }>;
   return expenses.map((e: ExpenseWithCategory) => ({
     ...e,
     amount: parseFloat(e.amount.toString()),
