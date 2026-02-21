@@ -1,26 +1,72 @@
 @import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-blue-primary: #0066FF;
+  --color-blue-hover:   #0052CC;
+  --color-background:   var(--bg);
+  --color-surface:      var(--surface);
+  --color-foreground:   var(--fg);
+  --color-border:       var(--border);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  --bg: #F5F5F0;
+  --surface: #FFFFFF;
+  --fg: #0A0A0A;
+  --border: #0A0A0A;
+}
+
+.dark {
+  --bg: #0A0A0A;
+  --surface: #111111;
+  --fg: #F0F0F0;
+  --border: #F0F0F0;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-geist-sans), Arial, sans-serif;
+}
+
+/* Brutalist utilities */
+.brutalist-box {
+  border: 2px solid var(--border);
+  box-shadow: 3px 3px 0 var(--border);
+}
+
+.brutalist-box:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--border);
+}
+
+.brutalist-btn {
+  border: 2px solid var(--border);
+  box-shadow: 3px 3px 0 var(--border);
+  transition: box-shadow 0.05s, transform 0.05s;
+  cursor: pointer;
+}
+
+.brutalist-btn:hover {
+  box-shadow: 4px 4px 0 var(--border);
+}
+
+.brutalist-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--border);
+}
+
+.label-mono {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
