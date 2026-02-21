@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { expenseSchema } from "@/schemas/expense.schema";
-import { Decimal } from "@prisma/client/runtime/client";
+import type { Prisma } from "@prisma/client";
 
 function requireAuth() {
   return auth().then((session) => {
@@ -150,8 +150,9 @@ export async function getExpenses({
     prisma.expense.count({ where }),
   ]);
 
+  type ExpenseWithCategory = Prisma.ExpenseGetPayload<{ include: { category: true } }>;
   return {
-    expenses: expenses.map((e: { amount: Decimal }) => ({
+    expenses: expenses.map((e: ExpenseWithCategory) => ({
       ...e,
       amount: parseFloat(e.amount.toString()),
     })),
@@ -170,7 +171,8 @@ export async function getRecentExpenses(limit = 5) {
     take: limit,
   });
 
-  return expenses.map((e) => ({
+  type ExpenseWithCategory = Prisma.ExpenseGetPayload<{ include: { category: true } }>;
+  return expenses.map((e: ExpenseWithCategory) => ({
     ...e,
     amount: parseFloat(e.amount.toString()),
   }));
