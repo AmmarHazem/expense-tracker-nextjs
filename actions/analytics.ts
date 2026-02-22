@@ -3,7 +3,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { format, eachDayOfInterval } from "date-fns";
-import type { AnalyticsData } from "@/types";
+import type { AnalyticsData, TopExpense } from "@/types";
 import { Decimal } from "@prisma/client/runtime/client";
 
 async function requireAuth() {
@@ -111,4 +111,31 @@ export async function getAnalyticsData(
     topCategory,
     previousPeriodTotal,
   };
+}
+
+export async function getTopExpenses(
+  startDate: Date,
+  endDate: Date,
+): Promise<TopExpense[]> {
+  const userId = await requireAuth();
+
+  const expenses = await prisma.expense.findMany({
+    where: { userId, date: { gte: startDate, lte: endDate } },
+    include: { category: true },
+    orderBy: { amount: "desc" },
+    take: 10,
+  });
+
+  return expenses.map((e) => ({
+    id: e.id,
+    amount: parseFloat(e.amount.toString()),
+    description: e.description,
+    merchant: e.merchant,
+    date: format(e.date, "yyyy-MM-dd"),
+    category: {
+      name: e.category.name,
+      emoji: e.category.emoji,
+      color: e.category.color,
+    },
+  }));
 }

@@ -22,3 +22,16 @@ export interface AnalyticsData {
   topCategory: CategorySpending | null;
   previousPeriodTotal: number;
 }
+
+export interface TopExpense {
+  id: string;
+  amount: number;
+  description: string | null;
+  merchant: string | null;
+  date: string;
+  category: {
+    name: string;
+    emoji: string;
+    color: string;
+  };
+}
