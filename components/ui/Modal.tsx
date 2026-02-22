@@ -40,7 +40,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
 
       {/* Modal */}
-      <div className="relative w-full max-w-lg bg-surface border-2 border-border shadow-[6px_6px_0_var(--border)] max-h-[90vh] overflow-y-auto">
+      <div className="relative w-full max-w-lg bg-surface brutalist-box max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b-2 border-border">
           <h2 className="font-black text-lg uppercase tracking-wide text-foreground">
