@@ -4,26 +4,52 @@
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --color-blue-primary: #0066FF;
-  --color-blue-hover:   #0052CC;
+  --color-blue-primary: var(--accent);
+  --color-blue-hover:   var(--accent-hover);
   --color-background:   var(--bg);
   --color-surface:      var(--surface);
   --color-foreground:   var(--fg);
   --color-border:       var(--border);
 }
 
-:root {
+/* ── Brutalist theme (default) ── */
+:root,
+[data-design-theme="brutalist"] {
   --bg: #F5F5F0;
   --surface: #FFFFFF;
   --fg: #0A0A0A;
   --border: #0A0A0A;
+  --accent: #0066FF;
+  --accent-hover: #0052CC;
 }
 
-.dark {
+[data-design-theme="brutalist"].dark,
+.dark:not([data-design-theme="ios"]) {
   --bg: #0A0A0A;
   --surface: #111111;
   --fg: #F0F0F0;
   --border: #F0F0F0;
+  --accent: #0066FF;
+  --accent-hover: #3385FF;
+}
+
+/* ── iOS theme ── */
+[data-design-theme="ios"] {
+  --bg: #F2F2F7;
+  --surface: #FFFFFF;
+  --fg: #000000;
+  --border: #C6C6C8;
+  --accent: #007AFF;
+  --accent-hover: #0066DD;
+}
+
+[data-design-theme="ios"].dark {
+  --bg: #000000;
+  --surface: #1C1C1E;
+  --fg: #FFFFFF;
+  --border: #38383A;
+  --accent: #0A84FF;
+  --accent-hover: #409CFF;
 }
 
 * {
@@ -36,7 +62,7 @@ body {
   font-family: var(--font-geist-sans), Arial, sans-serif;
 }
 
-/* Brutalist utilities */
+/* ── Brutalist utilities (default) ── */
 .brutalist-box {
   border: 2px solid var(--border);
   box-shadow: 3px 3px 0 var(--border);
@@ -69,4 +95,65 @@ body {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+/* ── iOS theme overrides ── */
+[data-design-theme="ios"] body {
+  font-family: -apple-system, BlinkMacSystemFont, var(--font-geist-sans), sans-serif;
+}
+
+[data-design-theme="ios"] .brutalist-box {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+[data-design-theme="ios"].dark .brutalist-box {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+[data-design-theme="ios"] .brutalist-box:active {
+  transform: scale(0.99);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+[data-design-theme="ios"] .brutalist-btn {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: none;
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+[data-design-theme="ios"] .brutalist-btn:hover {
+  opacity: 0.8;
+  box-shadow: none;
+}
+
+[data-design-theme="ios"] .brutalist-btn:active {
+  transform: scale(0.97);
+  box-shadow: none;
+}
+
+[data-design-theme="ios"] .label-mono {
+  font-family: -apple-system, BlinkMacSystemFont, var(--font-geist-mono), monospace;
+  letter-spacing: 0.04em;
+}
+
+/* iOS: thin borders — reduce all 2px border utilities to 1px */
+[data-design-theme="ios"] .border-2   { border-width: 1px; }
+[data-design-theme="ios"] .border-r-2 { border-right-width: 1px; }
+[data-design-theme="ios"] .border-b-2 { border-bottom-width: 1px; }
+[data-design-theme="ios"] .border-t-2 { border-top-width: 1px; }
+[data-design-theme="ios"] .border-l-2 { border-left-width: 1px; }
+
+/* iOS: remove offset box-shadows from any element using the brutalist shadow pattern */
+[data-design-theme="ios"] [class*="shadow-[3px"],
+[data-design-theme="ios"] [class*="shadow-[4px"],
+[data-design-theme="ios"] [class*="shadow-[6px"] {
+  box-shadow: none;
+}
+
+/* iOS: NavLink active state — rounded pill, no offset shadow */
+[data-design-theme="ios"] a.bg-blue-primary {
+  border-radius: 10px;
 }

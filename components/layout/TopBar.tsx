@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ThemeToggle } from "./ThemeToggle";
+import { ThemeSelector } from "./ThemeSelector";
 
 export function TopBar({
   sidebarContent,
@@ -18,6 +19,7 @@ export function TopBar({
           <div className="text-lg font-black text-foreground leading-none">TRACKER</div>
         </div>
         <div className="flex items-center gap-2">
+          <ThemeSelector />
           <ThemeToggle />
           <button
             onClick={() => setOpen(true)}
