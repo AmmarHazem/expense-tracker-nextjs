@@ -138,3 +138,22 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, var(--font-geist-mono), monospace;
   letter-spacing: 0.04em;
 }
+
+/* iOS: thin borders — reduce all 2px border utilities to 1px */
+[data-design-theme="ios"] .border-2   { border-width: 1px; }
+[data-design-theme="ios"] .border-r-2 { border-right-width: 1px; }
+[data-design-theme="ios"] .border-b-2 { border-bottom-width: 1px; }
+[data-design-theme="ios"] .border-t-2 { border-top-width: 1px; }
+[data-design-theme="ios"] .border-l-2 { border-left-width: 1px; }
+
+/* iOS: remove offset box-shadows from any element using the brutalist shadow pattern */
+[data-design-theme="ios"] [class*="shadow-[3px"],
+[data-design-theme="ios"] [class*="shadow-[4px"],
+[data-design-theme="ios"] [class*="shadow-[6px"] {
+  box-shadow: none;
+}
+
+/* iOS: NavLink active state — rounded pill, no offset shadow */
+[data-design-theme="ios"] a.bg-blue-primary {
+  border-radius: 10px;
+}
