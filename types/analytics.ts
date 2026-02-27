@@ -35,3 +35,8 @@ export interface TopExpense {
     color: string;
   };
 }
+
+export interface MonthlySpending {
+  month: string; // "yyyy-MM"
+  amount: number;
+}

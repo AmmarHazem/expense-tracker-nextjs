@@ -3,7 +3,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { format, eachDayOfInterval } from "date-fns";
-import type { AnalyticsData, TopExpense } from "@/types";
+import type { AnalyticsData, TopExpense, MonthlySpending } from "@/types";
 import { Decimal } from "@prisma/client/runtime/client";
 
 async function requireAuth() {
@@ -138,4 +138,24 @@ export async function getTopExpenses(
       color: e.category.color,
     },
   }));
+}
+
+export async function getTopSpendingMonths(): Promise<MonthlySpending[]> {
+  const userId = await requireAuth();
+
+  const expenses = await prisma.expense.findMany({
+    where: { userId },
+    select: { amount: true, date: true },
+  });
+
+  const monthMap = new Map<string, number>();
+  for (const e of expenses) {
+    const key = format(e.date, "yyyy-MM");
+    monthMap.set(key, (monthMap.get(key) ?? 0) + parseFloat(e.amount.toString()));
+  }
+
+  return Array.from(monthMap.entries())
+    .map(([month, amount]) => ({ month, amount }))
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 10);
 }
