@@ -28,7 +28,9 @@ export function TopSpendingMonthsChart({ data }: TopSpendingMonthsChartProps) {
   if (data.length === 0) {
     return (
       <div className="brutalist-box bg-surface p-4">
-        <div className="label-mono text-foreground/50 mb-4">TOP SPENDING MONTHS</div>
+        <div className="label-mono text-foreground/50 mb-4">
+          TOP SPENDING MONTHS
+        </div>
         <p className="text-sm text-foreground/40 font-mono">No data yet.</p>
       </div>
     );
@@ -38,12 +40,11 @@ export function TopSpendingMonthsChart({ data }: TopSpendingMonthsChartProps) {
 
   return (
     <div className="brutalist-box bg-surface p-4">
-      <div className="label-mono text-foreground/50 mb-4">TOP SPENDING MONTHS</div>
+      <div className="label-mono text-foreground/50 mb-4">
+        TOP SPENDING MONTHS
+      </div>
       <ResponsiveContainer width="100%" height={260}>
-        <BarChart
-          data={data}
-          margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
-        >
+        <BarChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
           <CartesianGrid
             strokeDasharray="2 2"
             stroke="var(--border)"
@@ -71,7 +72,10 @@ export function TopSpendingMonthsChart({ data }: TopSpendingMonthsChartProps) {
               fontSize: 12,
               fontFamily: "monospace",
             }}
-            formatter={(val: number) => [amountFmt.format(val), "Total spent"]}
+            formatter={(val: number | undefined) => [
+              amountFmt.format(val ?? 0),
+              "Total spent",
+            ]}
             labelFormatter={(m) => format(new Date(`${m}-01`), "MMMM yyyy")}
           />
           <Bar dataKey="amount" maxBarSize={48}>
