@@ -1,4 +1,4 @@
-import { getAnalyticsData, getTopExpenses } from "@/actions/analytics";
+import { getAnalyticsData, getTopExpenses, getTopSpendingMonths } from "@/actions/analytics";
 import { DateRangePicker } from "@/components/analytics/DateRangePicker";
 import { MetricsRow } from "@/components/analytics/MetricsRow";
 import { SpendingBarChart } from "@/components/analytics/SpendingBarChart";
@@ -6,6 +6,7 @@ import { SpendingLineChart } from "@/components/analytics/SpendingLineChart";
 import { CategoryDonutChart } from "@/components/analytics/CategoryDonutChart";
 import { CategoryBreakdownTable } from "@/components/analytics/CategoryBreakdownTable";
 import { TopExpensesTable } from "@/components/analytics/TopExpensesTable";
+import { TopSpendingMonthsChart } from "@/components/analytics/TopSpendingMonthsChart";
 import { getDateRangeFromParams } from "@/lib/utils";
 
 interface AnalyticsPageProps {
@@ -24,9 +25,10 @@ export default async function AnalyticsPage({
     get: (key: string) => (params as Record<string, string>)[key] ?? null,
   });
 
-  const [data, topExpenses] = await Promise.all([
+  const [data, topExpenses, topMonths] = await Promise.all([
     getAnalyticsData(start, end),
     getTopExpenses(start, end),
+    getTopSpendingMonths(),
   ]);
 
   return (
@@ -55,8 +57,13 @@ export default async function AnalyticsPage({
         <CategoryBreakdownTable data={data.byCategory} />
       </div>
 
-      {/* Top 10 most expensive expenses */}
-      <TopExpensesTable data={topExpenses} />
+      {/* Top 10 most expensive expenses for selected range */}
+      <div className="mb-4">
+        <TopExpensesTable data={topExpenses} />
+      </div>
+
+      {/* Top 10 spending months — all-time */}
+      <TopSpendingMonthsChart data={topMonths} />
     </div>
   );
 }
