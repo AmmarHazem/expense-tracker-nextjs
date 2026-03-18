@@ -1,76 +1,14 @@
-import { openai } from "@ai-sdk/openai";
-import { generateText, Output } from "ai";
-import { z } from "zod";
 import { NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
 import { prisma } from "@/lib/prisma";
-
-const DEFAULT_CATEGORIES = [
-  { name: "Food", emoji: "🍔", color: "#FF6B6B" },
-  { name: "Transport", emoji: "🚗", color: "#4ECDC4" },
-  { name: "Housing", emoji: "🏠", color: "#45B7D1" },
-  { name: "Entertainment", emoji: "🎮", color: "#F7DC6F" },
-  { name: "Health", emoji: "💊", color: "#A8D5A2" },
-  { name: "Shopping", emoji: "🛍️", color: "#C39BD3" },
-  { name: "Travel", emoji: "✈️", color: "#F0A500" },
-  { name: "Unknown", emoji: "🚫", color: "#FFFFFF" },
-];
-
-// Maps AI-returned category strings to our standard category names
-const CATEGORY_MAP: Record<string, string> = {
-  food: "Food",
-  dining: "Food",
-  restaurant: "Food",
-  grocery: "Food",
-  groceries: "Food",
-  supermarket: "Food",
-  cafe: "Food",
-  coffee: "Food",
-  transport: "Transport",
-  transportation: "Transport",
-  taxi: "Transport",
-  uber: "Transport",
-  careem: "Transport",
-  fuel: "Transport",
-  petrol: "Transport",
-  metro: "Transport",
-  parking: "Transport",
-  housing: "Housing",
-  rent: "Housing",
-  utilities: "Housing",
-  electricity: "Housing",
-  internet: "Housing",
-  phone: "Housing",
-  telecom: "Housing",
-  entertainment: "Entertainment",
-  streaming: "Entertainment",
-  cinema: "Entertainment",
-  movies: "Entertainment",
-  gaming: "Entertainment",
-  health: "Health",
-  medical: "Health",
-  pharmacy: "Health",
-  gym: "Health",
-  fitness: "Health",
-  shopping: "Shopping",
-  retail: "Shopping",
-  clothing: "Shopping",
-  electronics: "Shopping",
-  travel: "Travel",
-  hotel: "Travel",
-  airline: "Travel",
-  flight: "Travel",
-  holiday: "Travel",
-};
-
-function resolveCategory(aiCategory: string): string {
-  const lower = aiCategory.toLowerCase();
-  for (const [keyword, mapped] of Object.entries(CATEGORY_MAP)) {
-    if (lower.includes(keyword)) return mapped;
-  }
-  return "Unknown"; // default fallback
-}
+import { DEFAULT_CATEGORIES } from "@/lib/default-categories";
+import {
+  resolveCategory,
+  transactionSchema,
+  Transaction,
+  extractTransactionsFromBuffer,
+} from "@/lib/pdf-import";
 
 const USER_EMAIL = "ammar.hazem0@gmail.com";
 const UNLOCKED_DIR = path.join(process.cwd(), "bank-statements", "unlocked");
@@ -142,7 +80,8 @@ export async function POST() {
 
       if (source === "llm") {
         console.log(`Extracting via LLM: ${fileName}`);
-        transactions = await extractDataFromPDF({ filePath, fileName });
+        const buffer = await fs.readFile(filePath);
+        transactions = await extractTransactionsFromBuffer(buffer, fileName);
         await fs.writeFile(
           jsonPath,
           JSON.stringify(
@@ -215,71 +154,4 @@ export async function POST() {
     totalInserted,
     results,
   });
-}
-
-// ── PDF extraction ────────────────────────────────────────────────────────────
-
-const transactionSchema = z.object({
-  transactions: z.array(
-    z.object({
-      category: z
-        .string()
-        .describe(
-          "examples: food, transport, housing, health, travel, shopping, unknown",
-        ),
-      amount: z.number().describe("positive for credit, negative for debit"),
-      description: z.string(),
-      marchant: z
-        .string()
-        .describe(
-          "merchant name from the Description column, empty string if unknown",
-        ),
-      date: z.string().describe("ISO date string"),
-    }),
-  ),
-});
-
-type Transaction = z.infer<typeof transactionSchema>["transactions"][number];
-
-async function extractDataFromPDF({
-  filePath,
-  fileName,
-}: {
-  filePath: string;
-  fileName: string;
-}): Promise<Transaction[] | null> {
-  try {
-    const file = await fs.readFile(filePath);
-    const res = await generateText({
-      model: openai("gpt-4o"),
-      system:
-        "You are a bank statement parser. Extract the full transactions list from the attached PDF. Return every transaction row you find.",
-      output: Output.object({
-        name: "transactions",
-        schema: transactionSchema,
-      }),
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: "Extract all transactions from this bank statement. For each transaction set amount to negative if it is a debit/withdrawal, positive if it is a credit/deposit.",
-            },
-            {
-              type: "file",
-              mediaType: "application/pdf",
-              filename: fileName,
-              data: file,
-            },
-          ],
-        },
-      ],
-    });
-    const parsed = transactionSchema.safeParse(JSON.parse(res.text ?? "{}"));
-    return parsed.success ? parsed.data.transactions : null;
-  } catch (e) {
-    console.error(`extractDataFromPDF error [${fileName}]:`, e);
-    return null;
-  }
 }
