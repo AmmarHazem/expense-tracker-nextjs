@@ -35,7 +35,7 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
       page,
       pageSize: PAGE_SIZE,
       categoryIds: categoryIds.length > 0 ? categoryIds : undefined,
-      search: search || undefined,
+      search: search,
     }),
   ]);
 

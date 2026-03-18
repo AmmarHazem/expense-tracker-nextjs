@@ -5,11 +5,11 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --color-blue-primary: var(--accent);
-  --color-blue-hover:   var(--accent-hover);
-  --color-background:   var(--bg);
-  --color-surface:      var(--surface);
-  --color-foreground:   var(--fg);
-  --color-border:       var(--border);
+  --color-blue-hover: var(--accent-hover);
+  --color-background: var(--bg);
+  --color-surface: var(--surface);
+  --color-foreground: var(--fg);
+  --color-border: var(--border);
 }
 
 /* ── Brutalist theme (default) ── */
@@ -68,11 +68,6 @@ body {
   box-shadow: 3px 3px 0 var(--border);
 }
 
-.brutalist-box:active {
-  transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0 var(--border);
-}
-
 .brutalist-btn {
   border: 2px solid var(--border);
   box-shadow: 3px 3px 0 var(--border);
@@ -112,11 +107,6 @@ body {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
-[data-design-theme="ios"] .brutalist-box:active {
-  transform: scale(0.99);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-}
-
 [data-design-theme="ios"] .brutalist-btn {
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -140,11 +130,25 @@ body {
 }
 
 /* iOS: thin borders — reduce all 2px border utilities to 1px */
-[data-design-theme="ios"] .border-2   { border-width: 1px; }
-[data-design-theme="ios"] .border-r-2 { border-right-width: 1px; }
-[data-design-theme="ios"] .border-b-2 { border-bottom-width: 1px; }
-[data-design-theme="ios"] .border-t-2 { border-top-width: 1px; }
-[data-design-theme="ios"] .border-l-2 { border-left-width: 1px; }
+[data-design-theme="ios"] .border-2 {
+  border-width: 1px;
+}
+
+[data-design-theme="ios"] .border-r-2 {
+  border-right-width: 1px;
+}
+
+[data-design-theme="ios"] .border-b-2 {
+  border-bottom-width: 1px;
+}
+
+[data-design-theme="ios"] .border-t-2 {
+  border-top-width: 1px;
+}
+
+[data-design-theme="ios"] .border-l-2 {
+  border-left-width: 1px;
+}
 
 /* iOS: remove offset box-shadows from any element using the brutalist shadow pattern */
 [data-design-theme="ios"] [class*="shadow-[3px"],

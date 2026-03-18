@@ -19,6 +19,7 @@ export async function Sidebar({ onClose }: { onClose?: () => void }) {
         <NavLink href="/" icon="📊" label="Dashboard" />
         <NavLink href="/history" icon="📋" label="History" />
         <NavLink href="/analytics" icon="📈" label="Analytics" />
+        <NavLink href="/import" icon="📥" label="Import" />
       </nav>
 
       {/* Categories Manager link */}
