@@ -18,9 +18,7 @@ export function CategoryDonutChart({ data }: CategoryDonutChartProps) {
     return (
       <div className="brutalist-box bg-surface p-4">
         <div className="label-mono text-foreground/50 mb-4">BY CATEGORY</div>
-        <div className="h-48 flex items-center justify-center text-foreground/30 font-mono text-sm">
-          No data
-        </div>
+        <div className="h-48 flex items-center justify-center text-foreground/30 font-mono text-sm">No data</div>
       </div>
     );
   }
@@ -53,16 +51,12 @@ export function CategoryDonutChart({ data }: CategoryDonutChartProps) {
               fontSize: 12,
               fontFamily: "monospace",
             }}
-            formatter={(val: number | undefined, name: string | undefined) => [fmt.format(val ?? 0), name ?? ""]}
+            formatter={(val, name) => [fmt.format(Number(val) || 0), name ?? ""]}
           />
           <Legend
             iconType="square"
             iconSize={10}
-            formatter={(value) => (
-              <span style={{ fontSize: 11, fontFamily: "monospace", color: "var(--fg)" }}>
-                {value}
-              </span>
-            )}
+            formatter={(value) => <span style={{ fontSize: 11, fontFamily: "monospace", color: "var(--fg)" }}>{value}</span>}
           />
         </PieChart>
       </ResponsiveContainer>

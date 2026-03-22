@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import type { DailySpending } from "@/types";
 import { format } from "date-fns";
 
@@ -46,11 +38,11 @@ export function SpendingLineChart({ data }: SpendingLineChartProps) {
               fontSize: 12,
               fontFamily: "monospace",
             }}
-            formatter={(val: number | undefined) => [
+            formatter={(val) => [
               new Intl.NumberFormat("en-AE", {
                 style: "currency",
                 currency: "AED",
-              }).format(val ?? 0),
+              }).format(Number(val) || 0),
               "Total",
             ]}
             labelFormatter={(label) => format(new Date(label), "EEEE, MMM d")}

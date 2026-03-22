@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import type { DailySpending } from "@/types";
 import { format } from "date-fns";
 
@@ -18,10 +10,7 @@ interface SpendingBarChartProps {
 
 export function SpendingBarChart({ data }: SpendingBarChartProps) {
   // Aggregate by week if data spans > 35 days
-  const displayData =
-    data.length > 35
-      ? data.filter((_, i) => i % 7 === 0)
-      : data;
+  const displayData = data.length > 35 ? data.filter((_, i) => i % 7 === 0) : data;
 
   return (
     <div className="brutalist-box bg-surface p-4">
@@ -52,11 +41,11 @@ export function SpendingBarChart({ data }: SpendingBarChartProps) {
               fontSize: 12,
               fontFamily: "monospace",
             }}
-            formatter={(val: number | undefined) => [
+            formatter={(val) => [
               new Intl.NumberFormat("en-AE", {
                 style: "currency",
                 currency: "AED",
-              }).format(val ?? 0),
+              }).format(Number(val) || 0),
               "Spent",
             ]}
             labelFormatter={(label) => format(new Date(label), "EEEE, MMM d")}
