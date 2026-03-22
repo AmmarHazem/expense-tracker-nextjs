@@ -1,10 +1,17 @@
 import { signIn } from "@/lib/auth";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { EmailSignInForm } from "@/components/auth/EmailSignInForm";
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ registered?: string }>;
+}) {
   const session = await auth();
   if (session?.user) redirect("/");
+
+  const { registered } = await searchParams;
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -22,7 +29,23 @@ export default async function LoginPage() {
           </p>
         </div>
 
-        {/* Sign In Form */}
+        {registered && (
+          <div className="mb-4 px-3 py-2 border border-green-500 text-green-600 text-xs font-mono">
+            Account created! Sign in below.
+          </div>
+        )}
+
+        {/* Email/Password Form */}
+        <EmailSignInForm />
+
+        {/* Divider */}
+        <div className="my-4 flex items-center gap-3">
+          <div className="flex-1 border-t border-border" />
+          <span className="text-xs text-foreground/40 font-mono uppercase">or</span>
+          <div className="flex-1 border-t border-border" />
+        </div>
+
+        {/* Google Sign In */}
         <form
           action={async () => {
             "use server";
