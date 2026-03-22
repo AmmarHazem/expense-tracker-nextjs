@@ -12,6 +12,7 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
+  password      String?
   seedLoaded    Boolean   @default(false)
   accounts      Account[]
   sessions      Session[]
