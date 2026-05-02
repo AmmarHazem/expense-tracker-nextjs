@@ -31,8 +31,33 @@ export async function POST(request: Request) {
   // 3. Read file buffer
   const buffer = Buffer.from(await file.arrayBuffer());
 
+  // 3b. Build merchant→category maps from the user's expense history.
+  // Fetch up to 300 rows ordered by most-recently-updated so that the most
+  // recently corrected category wins when a merchant appears more than once.
+  // After deduplication this yields at most ~150 distinct merchants — enough
+  // for useful fuzzy matching without bloating the LLM prompt.
+  const pastExpenses = await prisma.expense.findMany({
+    where: { userId, merchant: { not: null } },
+    select: { merchant: true, category: { select: { name: true } } },
+    orderBy: { updatedAt: "desc" },
+    take: 300,
+  });
+  // knownMerchantsForPrompt: original casing → sent to LLM for semantic matching
+  // knownMerchants: lowercase-keyed → used for exact-match override post-LLM
+  const knownMerchants: Record<string, string> = {};
+  const knownMerchantsForPrompt: Record<string, string> = {};
+  for (const e of pastExpenses) {
+    if (e.merchant) {
+      const key = e.merchant.toLowerCase().trim();
+      if (!knownMerchants[key]) {
+        knownMerchants[key] = e.category.name;
+        knownMerchantsForPrompt[e.merchant.trim()] = e.category.name;
+      }
+    }
+  }
+
   // 4. Extract transactions via LLM
-  const transactions = await extractTransactionsFromBuffer(buffer, file.name);
+  const transactions = await extractTransactionsFromBuffer(buffer, file.name, knownMerchantsForPrompt);
   if (!transactions) {
     return NextResponse.json({ error: "Failed to extract transactions from PDF" }, { status: 422 });
   }
@@ -54,7 +79,9 @@ export async function POST(request: Request) {
   }
 
   const rows = debits.map((t) => {
-    const categoryName = resolveCategory(t.category);
+    const merchantKey = t.marchant?.toLowerCase().trim();
+    const knownCategoryName = merchantKey ? knownMerchants[merchantKey] : undefined;
+    const categoryName = knownCategoryName ?? resolveCategory(t.category);
     const category = catByName.get(categoryName) ?? catByName.get("Unknown")!;
     return {
       amount: Math.abs(t.amount),
