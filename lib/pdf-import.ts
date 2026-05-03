@@ -81,12 +81,22 @@ export type Transaction = z.infer<typeof transactionSchema>["transactions"][numb
 export async function extractTransactionsFromBuffer(
   buffer: Buffer,
   fileName: string,
+  knownMerchants?: Record<string, string>,
 ): Promise<Transaction[] | null> {
+  let knownMerchantsSection = "";
+  if (knownMerchants && Object.keys(knownMerchants).length > 0) {
+    const lines = Object.entries(knownMerchants)
+      .map(([merchant, category]) => `${merchant} → ${category}`)
+      .join("\n");
+    knownMerchantsSection =
+      `\n\nThe user's expense history contains these merchant-to-category mappings. Use them as your FIRST reference — if a merchant name matches or closely resembles one of these, assign that category:\n\n${lines}\n\nAvailable categories: Food, Transport, Housing, Entertainment, Health, Shopping, Travel, Unknown.`;
+  }
+
   try {
     const res = await generateText({
       model: openai("gpt-4o"),
       system:
-        "You are a bank statement parser. Extract the full transactions list from the attached PDF. Return every transaction row you find.",
+        `You are a bank statement parser. Extract the full transactions list from the attached PDF. Return every transaction row you find.${knownMerchantsSection}`,
       output: Output.object({
         name: "transactions",
         schema: transactionSchema,
