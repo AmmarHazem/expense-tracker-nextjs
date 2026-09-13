@@ -4,6 +4,11 @@ import { auth } from "@/lib/auth";
 import { DEFAULT_CATEGORIES } from "@/lib/default-categories";
 import { resolveCategory, extractTransactionsFromBuffer } from "@/lib/pdf-import";
 
+// The LLM PDF extraction can take much longer than Vercel's default 10s
+// function timeout, which caused FUNCTION_INVOCATION_TIMEOUT (504). 60s is the
+// max allowed on the Hobby plan; raise further (up to 300) if on Pro.
+export const maxDuration = 60;
+
 export async function POST(request: Request) {
   // 1. Auth check
   const session = await auth();
