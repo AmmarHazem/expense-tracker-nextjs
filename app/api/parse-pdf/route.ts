@@ -4,6 +4,8 @@ import { auth } from "@/lib/auth";
 import { DEFAULT_CATEGORIES } from "@/lib/default-categories";
 import { resolveCategory, extractTransactionsFromBuffer } from "@/lib/pdf-import";
 
+export const maxDuration = 60;
+
 export async function POST(request: Request) {
   // 1. Auth check
   const session = await auth();
@@ -57,9 +59,16 @@ export async function POST(request: Request) {
   }
 
   // 4. Extract transactions via LLM
-  const transactions = await extractTransactionsFromBuffer(buffer, file.name, knownMerchantsForPrompt);
+  let transactions;
+  try {
+    transactions = await extractTransactionsFromBuffer(buffer, file.name, knownMerchantsForPrompt);
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Unknown error";
+    console.error("PDF extraction failed:", message);
+    return NextResponse.json({ error: `Failed to extract transactions: ${message}` }, { status: 422 });
+  }
   if (!transactions) {
-    return NextResponse.json({ error: "Failed to extract transactions from PDF" }, { status: 422 });
+    return NextResponse.json({ error: "Failed to parse LLM response" }, { status: 422 });
   }
 
   // 5. Ensure user has categories
