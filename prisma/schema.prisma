@@ -18,6 +18,7 @@ model User {
   sessions      Session[]
   categories    Category[]
   expenses      Expense[]
+  importJobs    ImportJob[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -86,4 +87,22 @@ model Expense {
 
   @@index([userId, date])
   @@index([userId, categoryId])
+}
+
+// Tracks a single PDF-import run so it can be processed after the HTTP
+// response is sent and polled for progress by the client. This keeps the
+// upload request from blocking (and timing out) on large statements.
+model ImportJob {
+  id        String   @id @default(cuid())
+  userId    String
+  status    String   @default("processing") // processing | done | error
+  fileName  String
+  extracted Int      @default(0) // transactions found in the PDF
+  inserted  Int      @default(0) // expenses actually written
+  error     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
