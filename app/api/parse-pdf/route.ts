@@ -1,9 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { DEFAULT_CATEGORIES } from "@/lib/default-categories";
-import { resolveCategory, extractTransactionsFromBuffer } from "@/lib/pdf-import";
+import { processImport } from "@/lib/import-processor";
 
+// Deterministic parsing is near-instant, but the LLM fallback can be slow, so
+// keep the max the Hobby plan allows. The client no longer waits on this
+// request — it polls the job status — so it never sees a 504.
 export const maxDuration = 60;
 
 export async function POST(request: Request) {
@@ -30,80 +32,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "File must be a PDF" }, { status: 400 });
   }
 
-  // 3. Read file buffer
+  // 3. Read the file, create a job row, and process it after responding so the
+  //    upload request returns immediately (large statements never time out).
   const buffer = Buffer.from(await file.arrayBuffer());
-
-  // 3b. Build merchant→category maps from the user's expense history.
-  // Fetch up to 300 rows ordered by most-recently-updated so that the most
-  // recently corrected category wins when a merchant appears more than once.
-  // After deduplication this yields at most ~150 distinct merchants — enough
-  // for useful fuzzy matching without bloating the LLM prompt.
-  const pastExpenses = await prisma.expense.findMany({
-    where: { userId, merchant: { not: null } },
-    select: { merchant: true, category: { select: { name: true } } },
-    orderBy: { updatedAt: "desc" },
-    take: 300,
-  });
-  // knownMerchantsForPrompt: original casing → sent to LLM for semantic matching
-  // knownMerchants: lowercase-keyed → used for exact-match override post-LLM
-  const knownMerchants: Record<string, string> = {};
-  const knownMerchantsForPrompt: Record<string, string> = {};
-  for (const e of pastExpenses) {
-    if (e.merchant) {
-      const key = e.merchant.toLowerCase().trim();
-      if (!knownMerchants[key]) {
-        knownMerchants[key] = e.category.name;
-        knownMerchantsForPrompt[e.merchant.trim()] = e.category.name;
-      }
-    }
-  }
-
-  // 4. Extract transactions via LLM
-  let transactions;
-  try {
-    transactions = await extractTransactionsFromBuffer(buffer, file.name, knownMerchantsForPrompt);
-  } catch (e) {
-    const message = e instanceof Error ? e.message : "Unknown error";
-    console.error("PDF extraction failed:", message);
-    return NextResponse.json({ error: `Failed to extract transactions: ${message}` }, { status: 422 });
-  }
-  if (!transactions) {
-    return NextResponse.json({ error: "Failed to parse LLM response" }, { status: 422 });
-  }
-
-  // 5. Ensure user has categories
-  let categories = await prisma.category.findMany({ where: { userId } });
-  if (categories.length === 0) {
-    await prisma.category.createMany({
-      data: DEFAULT_CATEGORIES.map((c) => ({ ...c, isDefault: true, userId })),
-    });
-    categories = await prisma.category.findMany({ where: { userId } });
-  }
-  const catByName = new Map(categories.map((c) => [c.name, c]));
-
-  // 6. Filter debits and build expense rows
-  const debits = transactions.filter((t) => t.amount < 0);
-  if (debits.length === 0) {
-    return NextResponse.json({ ok: true, extracted: transactions.length, inserted: 0 });
-  }
-
-  const rows = debits.map((t) => {
-    const merchantKey = t.marchant?.toLowerCase().trim();
-    const knownCategoryName = merchantKey ? knownMerchants[merchantKey] : undefined;
-    const categoryName = knownCategoryName ?? resolveCategory(t.category);
-    const category = catByName.get(categoryName) ?? catByName.get("Unknown")!;
-    return {
-      amount: Math.abs(t.amount),
-      description: t.description || null,
-      merchant: t.marchant || null,
-      date: new Date(t.date),
-      userId,
-      categoryId: category.id,
-    };
+  const job = await prisma.importJob.create({
+    data: { userId, fileName: file.name, status: "processing" },
   });
 
-  // 7. Insert expenses
-  await prisma.expense.createMany({ data: rows, skipDuplicates: true });
+  after(async () => {
+    await processImport(job.id, userId, buffer);
+  });
 
-  return NextResponse.json({ ok: true, extracted: transactions.length, inserted: rows.length });
+  return NextResponse.json({ jobId: job.id }, { status: 202 });
 }

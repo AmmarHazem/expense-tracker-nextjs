@@ -18,6 +18,8 @@ export default function ImportPage() {
     setError(null);
   }
 
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
   async function handleImport() {
     if (!file) return;
     setLoading(true);
@@ -28,14 +30,32 @@ export default function ImportPage() {
       const formData = new FormData();
       formData.append("file", file);
 
+      // Kick off the import — the server processes it in the background and
+      // returns a job id immediately, so a large statement never times out.
       const res = await fetch("/api/parse-pdf", { method: "POST", body: formData });
       const data = await res.json();
-
       if (!res.ok) {
         setError(data.error ?? "Something went wrong");
-      } else {
-        setResult({ extracted: data.extracted, inserted: data.inserted });
+        return;
       }
+
+      // Poll the job status until it finishes (max ~3 minutes).
+      const jobId = data.jobId as string;
+      for (let i = 0; i < 120; i++) {
+        await sleep(1500);
+        const statusRes = await fetch(`/api/parse-pdf/status?jobId=${jobId}`);
+        if (!statusRes.ok) continue;
+        const job = await statusRes.json();
+        if (job.status === "done") {
+          setResult({ extracted: job.extracted, inserted: job.inserted });
+          return;
+        }
+        if (job.status === "error") {
+          setError(job.error ?? "Import failed");
+          return;
+        }
+      }
+      setError("Import is taking longer than expected — check back shortly.");
     } catch {
       setError("Network error — please try again");
     } finally {
