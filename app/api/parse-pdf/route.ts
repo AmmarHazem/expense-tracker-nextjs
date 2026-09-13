@@ -7,12 +7,16 @@ import { resolveCategory, extractTransactionsFromBuffer } from "@/lib/pdf-import
 export const maxDuration = 60;
 
 export async function POST(request: Request) {
+  console.log("[parse-pdf] request received");
+  console.log("[parse-pdf] OPENAI_API_KEY set:", !!process.env.OPENAI_API_KEY);
+
   // 1. Auth check
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const userId = session.user.id;
+  console.log("[parse-pdf] user authenticated:", userId);
 
   // 2. Parse multipart form data
   let formData: FormData;
@@ -29,6 +33,7 @@ export async function POST(request: Request) {
   if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
     return NextResponse.json({ error: "File must be a PDF" }, { status: 400 });
   }
+  console.log("[parse-pdf] file received:", file.name, "size:", file.size, "bytes");
 
   // 3. Read file buffer
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -59,12 +64,15 @@ export async function POST(request: Request) {
   }
 
   // 4. Extract transactions via LLM
+  console.log("[parse-pdf] calling LLM, known merchants:", Object.keys(knownMerchantsForPrompt).length);
+  const llmStart = Date.now();
   let transactions;
   try {
     transactions = await extractTransactionsFromBuffer(buffer, file.name, knownMerchantsForPrompt);
+    console.log("[parse-pdf] LLM done in", Date.now() - llmStart, "ms, transactions:", transactions?.length ?? 0);
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";
-    console.error("PDF extraction failed:", message);
+    console.error("[parse-pdf] LLM failed after", Date.now() - llmStart, "ms:", message);
     return NextResponse.json({ error: `Failed to extract transactions: ${message}` }, { status: 422 });
   }
   if (!transactions) {
