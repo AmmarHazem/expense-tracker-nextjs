@@ -97,7 +97,7 @@ export async function extractTransactionsFromBuffer(
   }
 
   const res = await generateText({
-    model: openai("gpt-4o"),
+    model: openai("gpt-4o-mini"),
     system:
       `You are a bank statement parser. Extract the full transactions list from the attached PDF. Return every transaction row you find.${knownMerchantsSection}`,
     output: Output.object({
