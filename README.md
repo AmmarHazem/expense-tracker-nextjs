@@ -167,3 +167,29 @@ docker stop expense-import-test-db
 The suite covers extraction selection, merchant category precedence, partial
 category catalogues, invalid input, terminal jobs, concurrent execution, separate
 uploads, and rollback when either expense insertion or completion fails.
+
+### History pagination browser regression tests
+
+`npm run test:history` tests the actual production build through gstack browse.
+It starts a separate app on port 3102, creates a temporary user with 520 expenses
+(including 260 matching search/category filters), and removes its user and data
+afterward. It requires a disposable local database whose name ends in
+`_history_test`; it never uses the app's `DATABASE_URL`.
+
+```bash
+npm run build
+docker run --detach --rm --name history-pagination-test-db \
+  -e POSTGRES_PASSWORD=history-test -e POSTGRES_DB=expense_history_test \
+  -p 127.0.0.1:55440:5432 postgres:17-alpine
+# Wait for PostgreSQL to be ready. Point BROWSE_BIN at your installed gstack
+# browse executable, or an executable script that runs its source CLI.
+BROWSE_BIN="$HOME/.agents/skills/gstack/browse/dist/browse" \
+  TEST_DATABASE_URL=postgresql://postgres:history-test@127.0.0.1:55440/expense_history_test \
+  npm run test:history
+docker stop history-pagination-test-db
+```
+
+The suite asserts that page 12 survives hydration and repeated refreshes, then
+checks filtered deep links, Show More, the final page, Back/Forward, search focus,
+category changes, Clear, and cancellation of pending searches. Rebuild before
+rerunning after source changes. Set `HISTORY_TEST_PORT` if port 3102 is occupied.
