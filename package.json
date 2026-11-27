@@ -12,7 +12,8 @@
     "db:generate": "prisma generate",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
-    "test:imports": "tsx --test tests/import-processor.test.ts"
+    "test:imports": "tsx --test tests/import-processor.test.ts",
+    "test:history": "node --test tests/history-pagination.browser.mjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
