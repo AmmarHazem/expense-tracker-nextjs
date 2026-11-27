@@ -6,7 +6,7 @@ import { Pool } from "pg";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { createImportProcessor } from "../lib/import-processor";
-import { transactionSchema } from "../lib/pdf-import";
+import { transactionSchema, extractTransactionsFromText } from "../lib/pdf-import";
 import { extractPdfText } from "../lib/pdf-text";
 import type { ParsedTransaction } from "../lib/statement-parser";
 
@@ -249,4 +249,48 @@ test("real PDF text adapter feeds the deterministic import path", async () => {
   assert.equal(job.inserted, 1);
   assert.equal(expenses[0].merchant, "COFFEE SHOP");
   assert.equal(extractFallback.mock.callCount(), 0);
+});
+
+
+test("production AI SDK adapter normalizes structured output through the import interface", async () => {
+  const previousKey = process.env.OPENAI_API_KEY;
+  process.env.OPENAI_API_KEY = "synthetic-test-key";
+  const fetchMock = mock.method(globalThis, "fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
+    assert.match(String(input), /\/responses$/);
+    const request = JSON.parse(String(init?.body));
+    const fields = request.text.format.schema.properties.transactions.items.properties;
+    assert.equal(request.text.format.type, "json_schema");
+    assert.ok(fields.merchant);
+    assert.equal(fields.marchant, undefined);
+    return Response.json({
+      id: "resp_test",
+      created_at: 1_789_000_000,
+      model: "gpt-4o",
+      output: [{
+        type: "message", id: "msg_test", role: "assistant",
+        content: [{ type: "output_text", annotations: [], text: JSON.stringify({
+          transactions: [{ category: "food", amount: -45.5, description: "Fallback coffee",
+            merchant: " Cafe Fallback ", date: "2026-09-10" }],
+        }) }],
+      }],
+      usage: { input_tokens: 10, output_tokens: 10, total_tokens: 20 },
+    });
+  });
+  try {
+    const run = createImportProcessor({ db, readPdf: extractPdfText, extractFallback: extractTransactionsFromText });
+    await run(jobId, userId, statementPdf(["Example statement", "Cafe Fallback debit 45.50"]));
+    const { job, expenses } = await outcome();
+    assert.equal(fetchMock.mock.callCount(), 1);
+    assert.equal(job.status, "done");
+    assert.equal(job.extracted, 1);
+    assert.equal(job.inserted, 1);
+    assert.equal(expenses[0].merchant, "Cafe Fallback");
+    assert.equal(Number(expenses[0].amount), 45.5);
+    assert.equal(expenses[0].category.name, "Food");
+    assert.equal(expenses[0].date.toISOString(), "2026-09-10T00:00:00.000Z");
+  } finally {
+    fetchMock.mock.restore();
+    if (previousKey === undefined) delete process.env.OPENAI_API_KEY;
+    else process.env.OPENAI_API_KEY = previousKey;
+  }
 });
