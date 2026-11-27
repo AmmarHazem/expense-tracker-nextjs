@@ -132,3 +132,38 @@ prisma/
 | Health | 💊 | `#A8D5A2` |
 | Shopping | 🛍️ | `#C39BD3` |
 | Travel | ✈️ | `#F0A500` |
+
+## PDF import execution
+
+The upload route schedules `processImport` after returning a job ID. The import
+module normalizes deterministic and AI extraction into signed statement
+transactions, imports only debits, and prefers the user's latest merchant
+category mapping over category suggestions. Missing default categories are filled
+in without replacing existing categories.
+
+Expense insertion, category repair, and successful job completion share one
+PostgreSQL transaction. A conditional job transition prevents repeated or
+concurrent execution of the same job from inserting expenses twice. Separate
+uploads are separate jobs; this does not detect duplicates across uploads.
+Failed jobs are terminal. If recording an error also fails, it is logged and the
+job can remain processing; this workflow does not add durable retries.
+
+### Import integration tests
+
+Use a disposable PostgreSQL database, never the app's database. The tests require
+`TEST_DATABASE_URL`, apply the checked-in migrations to a unique schema, and
+remove that schema afterward. Tests control AI extraction and usually PDF text,
+with one synthetic PDF exercising the real text adapter. No live AI request is made.
+
+```bash
+docker run --detach --rm --name expense-import-test-db \
+  -e POSTGRES_PASSWORD=import-test -e POSTGRES_DB=import_test \
+  -p 127.0.0.1:55439:5432 postgres:17-alpine
+# Wait until PostgreSQL is ready, then run:
+TEST_DATABASE_URL=postgresql://postgres:import-test@127.0.0.1:55439/import_test npm run test:imports
+docker stop expense-import-test-db
+```
+
+The suite covers extraction selection, merchant category precedence, partial
+category catalogues, invalid input, terminal jobs, concurrent execution, separate
+uploads, and rollback when either expense insertion or completion fails.

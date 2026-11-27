@@ -22,6 +22,8 @@ export interface ParsedTransaction {
   merchant: string | null;
   /** Signed: negative for debits/withdrawals, positive for credits/deposits. */
   amount: number;
+  /** Category suggestion supplied by the AI extraction adapter, when used. */
+  categoryHint?: string;
 }
 
 const POSTING_DATE = /^\d{2}\/\d{2}\/\d{4}$/;
@@ -33,11 +35,14 @@ function toNumber(token: string): number {
 }
 
 /** Parse a dd/mm/yyyy string as a UTC date (avoids local-timezone drift). */
-function parseDate(ddmmyyyy: string): Date | null {
+function parseDate(ddmmyyyy: string): Date {
   const [dd, mm, yyyy] = ddmmyyyy.split("/").map(Number);
-  if (!dd || !mm || !yyyy) return null;
+  if (!dd || !mm || !yyyy) throw new Error(`Statement contains an invalid date: ${ddmmyyyy}`);
   const d = new Date(Date.UTC(yyyy, mm - 1, dd));
-  return Number.isNaN(d.getTime()) ? null : d;
+  if (d.getUTCFullYear() !== yyyy || d.getUTCMonth() !== mm - 1 || d.getUTCDate() !== dd) {
+    throw new Error(`Statement contains an invalid date: ${ddmmyyyy}`);
+  }
+  return d;
 }
 
 /**
@@ -83,7 +88,6 @@ export function parseStatement(text: string): ParsedTransaction[] {
     if (!m) continue; // not a transaction row (page header, summary, etc.)
 
     const date = parseDate(m[2]);
-    if (!date) continue;
 
     const tokens = m[3].trim().split(/\s+/);
     if (tokens.length < 4) continue;

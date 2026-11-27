@@ -1,6 +1,7 @@
 import { openai } from "@ai-sdk/openai";
 import { generateText, Output } from "ai";
 import { z } from "zod";
+import type { ParsedTransaction } from "@/lib/statement-parser";
 
 export const CATEGORY_MAP: Record<string, string> = {
   food: "Food",
@@ -66,17 +67,15 @@ export const transactionSchema = z.object({
         ),
       amount: z.number().describe("positive for credit, negative for debit"),
       description: z.string(),
-      marchant: z
+      merchant: z
         .string()
         .describe(
           "merchant name from the Description column, empty string if unknown",
         ),
-      date: z.string().describe("ISO date string"),
+      date: z.iso.date().describe("Purchase date as YYYY-MM-DD"),
     }),
   ),
 });
-
-export type Transaction = z.infer<typeof transactionSchema>["transactions"][number];
 
 function buildKnownMerchantsSection(knownMerchants?: Record<string, string>): string {
   if (!knownMerchants || Object.keys(knownMerchants).length === 0) return "";
@@ -99,7 +98,7 @@ function buildKnownMerchantsSection(knownMerchants?: Record<string, string>): st
 export async function extractTransactionsFromText(
   text: string,
   knownMerchants?: Record<string, string>,
-): Promise<Transaction[]> {
+): Promise<ParsedTransaction[]> {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("OPENAI_API_KEY environment variable is not set");
   }
@@ -117,9 +116,15 @@ export async function extractTransactionsFromText(
     ],
   });
 
-  const parsed = transactionSchema.safeParse(JSON.parse(res.text ?? "{}"));
+  const parsed = transactionSchema.safeParse(res.output);
   if (!parsed.success) {
     throw new Error("The AI returned an unparseable response for this statement");
   }
-  return parsed.data.transactions;
+  return parsed.data.transactions.map((t) => ({
+    date: new Date(`${t.date}T00:00:00.000Z`),
+    description: t.description,
+    merchant: t.merchant.trim() || null,
+    amount: t.amount,
+    categoryHint: t.category,
+  }));
 }
